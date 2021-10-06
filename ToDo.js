@@ -23,7 +23,6 @@ function addTodo(e) {
   newTodo.innerText = todoInput.value;
   //Save to local - do this last
   //Save to local
-  saveLocalTodos(todoInput.value);
   //
   newTodo.classList.add("todo-item");
   todoDiv.appendChild(newTodo);
@@ -40,6 +39,7 @@ function addTodo(e) {
   todoDiv.appendChild(trashButton);
   //attach final Todo
   todoList.appendChild(todoDiv);
+  syncTodosWithLocalStorage();
 }
 
 function deleteTodo(e) {
@@ -50,7 +50,6 @@ function deleteTodo(e) {
     const todo = item.parentElement;
     todo.classList.add("fall");
     //at the end
-    removeLocalTodos(todo);
     todo.addEventListener("transitionend", (e) => {
       todo.remove();
     });
@@ -60,6 +59,7 @@ function deleteTodo(e) {
     todo.classList.toggle("completed");
     console.log(todo);
   }
+  syncTodosWithLocalStorage();
 }
 
 function filterTodo(e) {
@@ -86,16 +86,17 @@ function filterTodo(e) {
   });
 }
 
-function saveLocalTodos(todo) {
-  let todos;
-  if (localStorage.getItem("todos") === null) {
-    todos = [];
-  } else {
-    todos = JSON.parse(localStorage.getItem("todos"));
-  }
-  todos.push(todo);
-  localStorage.setItem("todos", JSON.stringify(todos));
+function syncTodosWithLocalStorage() {
+  const todoElements = document.querySelectorAll(".todo");
+  const todoObjects = [...todoElements]
+    .filter((item) => !item.classList.contains("fall"))
+    .map((item) => ({
+      text: item.textContent,
+      isCompleted: item.classList.contains("completed"),
+    }));
+  localStorage.setItem("todos", JSON.stringify(todoObjects));
 }
+
 function removeLocalTodos(todo) {
   let todos;
   if (localStorage.getItem("todos") === null) {
@@ -119,9 +120,12 @@ function getTodos() {
     //Create todo div
     const todoDiv = document.createElement("div");
     todoDiv.classList.add("todo");
+    if (todo.isCompleted) {
+      todoDiv.classList.add("completed");
+    }
     //Create list
     const newTodo = document.createElement("li");
-    newTodo.innerText = todo;
+    newTodo.innerText = todo.text;
     newTodo.classList.add("todo-item");
     todoDiv.appendChild(newTodo);
     todoInput.value = "";
